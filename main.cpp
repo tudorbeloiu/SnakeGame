@@ -11,6 +11,8 @@ using namespace std;
 
 constexpr int wScreenWidth = 1024;
 constexpr int wScreenHeight = 768;
+constexpr int segmentSize = 30;
+constexpr int initialSnakeLength = 4; 
 
 SDL_Window* gWindow = nullptr;
 SDL_Renderer* gRender = nullptr;
@@ -24,16 +26,16 @@ SDL_FRect snakeHead{
 SDL_Texture* apple = nullptr;
 SDL_FRect appleRect;
 
+vector<SDL_FRect> snakeBody;
+
 
 float dx = 3.5f;
 float dy = 3.5f;
 
-float dx_nou = 0.0f;
+float dx_nou = segmentSize;
 float dy_nou = 0.0f;
 
-vector<SDL_FRect> snakeBody;
-constexpr int segmentSize = 30;
-constexpr int initialSnakeLength = 20; 
+
 
 int delay = 16;
 int actualDelay = 0;
@@ -89,10 +91,10 @@ bool init(){
 
         //initializam random pozitia marului
         srand(time(nullptr));
-
+        snakeBody.clear();
         snakeBody.push_back({(wScreenWidth-segmentSize)/2.0f,(wScreenHeight-segmentSize)/2.0f,segmentSize,segmentSize});
         for(int i = 1; i <= initialSnakeLength; i++){
-            snakeBody.push_back({snakeBody[0].x - i * segmentSize, snakeBody[0].y, segmentSize, segmentSize});
+            snakeBody.push_back({snakeBody[i-1].x - segmentSize, snakeBody[i-1].y, segmentSize, segmentSize});
         }
         generateApplePosition();
         
@@ -132,20 +134,20 @@ int main(){
             if(e.type == SDL_EVENT_KEY_DOWN){
                 switch(e.key.key){
                     case SDLK_LEFT:
-                        dx_nou = -3.5f;
+                        dx_nou = -segmentSize;
                         dy_nou = 0.0f;
                         break;
                     case SDLK_RIGHT:
-                        dx_nou = 3.5f;
+                        dx_nou = segmentSize;
                         dy_nou = 0.0f;
                         break;
                     case SDLK_UP:
                         dx_nou = 0.0f;
-                        dy_nou = -3.5f;
+                        dy_nou = -segmentSize;
                         break;
                     case SDLK_DOWN:
                         dx_nou = 0.0f;
-                        dy_nou = 3.5f;
+                        dy_nou = segmentSize;
                         break;
                 }
             }
@@ -164,24 +166,26 @@ int main(){
 
         if(SDL_HasRectIntersectionFloat(&snakeBody[0],&appleRect)){
             SDL_FRect lastSegment = snakeBody.back();
-            for(int i = 1; i <= 10; i++){
-                float newX = lastSegment.x;
-                float newY = lastSegment.y;
+           
+            float newX = lastSegment.x;
+            float newY = lastSegment.y;
 
-                if(dx_nou>0)
-                    newX -= segmentSize;
-                else if(dx_nou<0)
-                    newX += segmentSize;
-                else if(dy_nou>0)
-                    newY -= segmentSize;
-                else if(dy_nou<0)
-                    newY -= segmentSize;
-                snakeBody.push_back({newX,newY,segmentSize,segmentSize});
+            if(dx_nou>0)
+                newX -= segmentSize;
+            else if(dx_nou<0)
+                newX += segmentSize;
+            else if(dy_nou>0)
+                newY -= segmentSize;
+            else if(dy_nou<0)
+                newY -= segmentSize;
+            snakeBody.push_back({newX,newY,segmentSize,segmentSize});
 
-                lastSegment.x = newX;
-                lastSegment.y = newY;
-            }
             generateApplePosition();
+        }
+        for(int i=1; i<snakeBody.size(); i++){
+            if(snakeBody[0].x == snakeBody[i].x && snakeBody[0].y == snakeBody[i].y){
+                quit = true;
+            }
         }
 
         SDL_SetRenderDrawColor(gRender, 0, 0, 0, 255);
@@ -199,7 +203,7 @@ int main(){
 
         SDL_RenderPresent(gRender);
 
-        SDL_Delay(16);
+        SDL_Delay(100);
     }
     close();
     return 0;
